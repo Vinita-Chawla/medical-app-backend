@@ -36,7 +36,7 @@ const upload = multer({
 
 
 app.use("/auth",upload.single("profile"),auth_routes);
-app.use("/recipe",upload.single("recipe_photo"),recipe_routes);
+app.use("/recipe",upload.single("recipe_photo"),verifyToken,recipe_routes);
 
 app.get("/",(req,res)=>{
     res.send("home page")
