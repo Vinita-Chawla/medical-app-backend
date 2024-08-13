@@ -34,4 +34,24 @@ const getSingleRecipe = async(req,res)=>{
     res.send(recipe);
 }
 
-module.exports = {submitRecipe, getAllRecipes, getSingleRecipe};
+const addLikes = async(req,res)=>{
+    let {userId, recipeId, isLiked} = req.body;
+    let recipe = await recipeModel.updateOne(
+        {_id:req.params.id},
+        {$push:{likes:{userId:userId,recipeId:recipeId,isLiked:isLiked}}}
+    )
+
+    res.send(recipe);
+}
+
+const updateLikes = async(req,res)=>{
+    let {likes}= req.body;
+    let recipe = await recipeModel.updateOne(
+        {"likes.userId":req.params.userId, "likes.recipeId": req.params.postId},
+        {$set:{"likes.$.isLiked": likes.isLiked}}
+    )
+
+    res.send(recipe);
+}
+
+module.exports = {submitRecipe, getAllRecipes, getSingleRecipe, addLikes,updateLikes};

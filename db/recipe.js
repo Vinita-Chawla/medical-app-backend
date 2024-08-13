@@ -12,6 +12,11 @@ const recipeSchema = new mongoose.Schema({
     prep_time:String,
     cooking_time:String,
     calories:String,
+    likes:[{
+        userId:{type:mongoose.Schema.ObjectId,ref:"users"}, 
+        recipeId:{type:mongoose.Schema.ObjectId,ref:"recipes"},
+        isLiked:Boolean
+    }]
 })
 
 const recipeModel = mongoose.model("recipes", recipeSchema);
