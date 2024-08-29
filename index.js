@@ -3,30 +3,86 @@ const app = express();
 require("./db/config");
 const cors = require("cors");
 
+const corsConfig = {
+    origin:"*",
+    credentials:true,
+    methods:["GET","PUT","POST","PATCH","DELETE"]
+}
+app.options("", cors(corsConfig))
+app.use(cors(corsConfig));
+
+app.use(cors());
+
+
+require("./google_passport");
+require("./facebook-passport");
+require("dotenv").config();
+
+const Jwt = require("jsonwebtoken");
+const jwtKey = process.env.JWT_KEY;
+
 const auth_routes = require("./routers/auth");
-const recipe_routes = require("./routers/recipes")
+const products_routes = require("./routers/products");
+
+const webhook = require("./webhook")
+const bodyParser = require("body-parser")
+
+const stripe = require('stripe')('sk_test_51NqbIGBttcRVBy3MYXkus2GMikCglZ1BBtZqOMortgPVkIiKT5ldSWRDGwTo4Vl7c0ondXjlamokmYAezlxlQBAy00Exf37gl4');
+
+app.use((req,res,next)=>{
+    if(req.originalUrl === "/stripe_webhooks"){
+        next()
+    }
+    else{
+        express.json()(req,res,next);
+    }
+})
+
+app.post("/stripe_webhooks", bodyParser.raw({type:"application/json"}), webhook )
+
+
+
+const session = require("express-session");
+const passport = require("passport");
+
+app.use(session({
+    resave: false,
+    saveUninitialized: true,
+    secret: process.env.SESSION_SECRET
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+
+app.post("/",async(req,res)=>{
+    let line_items = req.body;
+
+    const session = await stripe.checkout.sessions.create({
+        success_url: "http://localhost:3000/success",
+        cancel_url: "http://localhost:3000/cancel",
+        line_items:line_items,
+        mode: 'payment',
+      });
+
+  
+      return res.status(200).json({session})
+})
+
 
 const multer = require("multer");
 const {CloudinaryStorage} = require("multer-storage-cloudinary")
 const cloudinary = require("./db/cloudinaryConfig");
 
-const stripe = require("stripe")(
-  "sk_test_51NqbIGBttcRVBy3MYXkus2GMikCglZ1BBtZqOMortgPVkIiKT5ldSWRDGwTo4Vl7c0ondXjlamokmYAezlxlQBAy00Exf37gl4"
-);
-
-app.use(express.json());
-app.use(cors());
 
 
-const Jwt = require("jsonwebtoken");
-let jwtKey = "recipe-app";
 
 const storage = new CloudinaryStorage({
     cloudinary:cloudinary,
     params:{
-    folder: "recipe-app/images",
-    format: async (req, file) => "png", 
-    public_id: (req, file) => Date.now() + "_" + file.originalname,
+        folder: "medical-app/images",
+        format: async (req, file) => "png", 
+        public_id: (req, file) => Date.now() + "_" + file.originalname,
     }
 })
 
@@ -35,13 +91,12 @@ const upload = multer({
 })
 
 
-app.use("/auth",upload.single("profile"),auth_routes);
-app.use("/recipe",upload.single("recipe_photo"),verifyToken,recipe_routes);
+app.use("/auth",upload.single("profile"), auth_routes);
+app.use("/products", verifyToken,products_routes);
 
 app.get("/",(req,res)=>{
     res.send("home page")
 })
-
 
 function verifyToken(req, res,next){
     let token = req.headers["authorization"];
@@ -65,62 +120,6 @@ function verifyToken(req, res,next){
 
 
 
-app.post("/", async (req, res) => {
-  try {
-      let { id, amount, interval,name,email,plan } = req.body;
-
-      if (!id) {
-        return res.status(400).send("Payment method ID is required");
-    }
-    
-      // Create a new customer
-      const customer = await stripe.customers.create({
-          name: name,
-          email:email,
-      });
-
-      // Attach the payment method to the customer
-      await stripe.paymentMethods.attach(id, {
-          customer: customer.id,
-      });
-
-      // Set the payment method as the default for the customer
-      await stripe.customers.update(customer.id, {
-          invoice_settings: {
-              default_payment_method: id,
-          },
-      });
-
-      // Create a new price
-      const price = await stripe.prices.create({
-          currency: "usd",
-          unit_amount: Math.round(amount*100),
-          recurring: {
-              interval: interval,
-          },
-          product_data: {
-              name: plan,
-          },
-      });
-
-      // Create a new subscription
-      const subscription = await stripe.subscriptions.create({
-          customer: customer.id,
-          items: [
-              {
-                  price: price.id,
-              },
-          ],
-          default_payment_method: id,
-      });
-
-      return res.send("Subscription successful");
-  } 
-  catch (err) {
-      console.error("Error:", err.message);
-      res.status(500).send("An error occurred: " + err.message);
-  }
-});
   
 
 app.listen("5000");
