@@ -43,12 +43,15 @@ app.post("/stripe_webhooks", bodyParser.raw({type:"application/json"}), webhook 
 
 
 const session = require("express-session");
+const MongoStore = require('connect-mongo');
+
 const passport = require("passport");
 
 app.use(session({
     resave: false,
     saveUninitialized: true,
-    secret: process.env.SESSION_SECRET
+    secret: process.env.SESSION_SECRET,
+    store: MongoStore.create({ mongoUrl: "mongodb+srv://vinitachawla49:vinita12@cluster0.gpwvob3.mongodb.net/medical-app" })
 }));
 
 app.use(passport.initialize());
