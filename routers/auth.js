@@ -41,7 +41,7 @@ router.route("/google/callback").get(
     passport.authenticate("google", {failureRedirect: "/auth/failure",}),
     (req, res) => {
       const token = generateToken(req.user); 
-      res.redirect(`http://localhost:3000/google-success?token=${token}&user=${encodeURIComponent(JSON.stringify(req.user))}`);
+      res.redirect(`https://medical-app-frontend-blue.vercel.app/google-success?token=${token}&user=${encodeURIComponent(JSON.stringify(req.user))}`);
     }
   );
 
@@ -53,7 +53,7 @@ router.route('/facebook/callback').get(
   passport.authenticate('facebook', { failureRedirect: '/auth/failure' }),
   (req, res) => {
       const token = generateToken(req.user);
-      res.redirect(`http://localhost:3000/facebook-success?token=${token}&user=${encodeURIComponent(JSON.stringify(req.user))}`);
+      res.redirect(`https://medical-app-frontend-blue.vercel.app/facebook-success?token=${token}&user=${encodeURIComponent(JSON.stringify(req.user))}`);
   }
 );
 

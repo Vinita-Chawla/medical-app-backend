@@ -79,7 +79,7 @@ const register = async (req, res) => {
 
       await token.save();
 
-      const link = `http://localhost:5000/auth/confirm/${auth}`;
+      const link = `https://medical-app-backend-one.vercel.app/auth/confirm/${auth}`;
       await verifyMail(user.email, link,"Verfiy your Email");
 
       res.status(200).send({
@@ -113,7 +113,7 @@ const forgotPassword = async (req, res) => {
       if (err) {
         res.send("Oops! Something went wrong.");
       } else {
-        const link = `http://localhost:3000/reset-password/${user._id}/${token}`;
+        const link = `https://medical-app-frontend-blue.vercel.app/reset-password/${user._id}/${token}`;
         await verifyMail(user.email, link, "Reset your Password");
         res.status(200).send({
           message: "An Email sent to your account, Please Reset your password!",
